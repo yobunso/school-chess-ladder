@@ -4,10 +4,10 @@ const $ = id => document.getElementById(id);
 const examples = [
   ['Knightshift','Maple Rook','Win'], ['Bishop Bee','Quiet Pawn','Draw'],
   ['Maple Rook','Bishop Bee','Win'], ['Knightshift','Quiet Pawn','Win'],
-  ['Castle Cat','Maple Rook','Draw'], ['Quiet Pawn','Castle Cat','Win'],
+  ['Castle Cat','Maple Rook','Draw'], ['Quiet Pawn','Castle Cat','Draw'],
   ['Knightshift','Bishop Bee','Draw'], ['Knightshift','Castle Cat','Win']
 ].map(([a,b,result]) => ({a,b,result,time:'Sample game'}));
-const palette=['#dbe8d5','#e7dfcf','#e4e4ed','#dbe7e7','#f0e0d0','#e8dfe1'];
+const palette=['#e3eaff','#e6edf9','#e9e5fa','#daedf7','#e5eaff','#e3eafa'];
 let games = [], ready = false, online = false, busy = false, showSamples = true;
 let view = location.hash === '#games' ? 'games' : 'standings';
 function cell(tr, value, cls) {
@@ -30,11 +30,63 @@ function dateLabel(value) {
   }
   return value;
 }
+const standingsPanel = document.querySelector('.main-card');
+let presenting = false;
+function drawPodium(players, log) {
+  const podium = $('podium');
+  podium.hidden = log || !players.length;
+  podium.replaceChildren();
+  if (podium.hidden) return;
+  for (const place of [2, 1, 3]) {
+    const leaders = players.filter(p => p.rank === place);
+    const step = document.createElement('div');
+    step.className = 'step place-' + place;
+    const label = document.createElement('span');
+    label.className = 'place-label';
+    label.textContent = ['1st place','2nd place','3rd place'][place - 1];
+    step.append(label);
+    for (const player of leaders) {
+      const name = document.createElement('strong');
+      name.textContent = player.name;
+      step.append(name);
+    }
+    const points = document.createElement('small');
+    points.textContent = leaders.length ? leaders[0].points + ' pts' : 'Unoccupied';
+    step.append(points);
+    podium.append(step);
+  }
+}
+function setPresentation(active) {
+  presenting = active;
+  document.body.classList.toggle('presenting', active);
+  $('exit-projector').hidden = !active;
+  render();
+  (active ? $('exit-projector') : $('projector')).focus({preventScroll:true});
+}
+$('projector').addEventListener('click', async () => {
+  setPresentation(true);
+  try { await standingsPanel.requestFullscreen(); }
+  catch { /* The standings-only page also works in embedded browsers. */ }
+});
+async function leavePresentation() {
+  if (document.fullscreenElement === standingsPanel) await document.exitFullscreen();
+  if (presenting) setPresentation(false);
+}
+$('exit-projector').addEventListener('click', leavePresentation);
+document.addEventListener('fullscreenchange', () => {
+  if (!document.fullscreenElement && presenting) setPresentation(false);
+});
+document.addEventListener('keydown', event => {
+  if (presenting && event.key === 'Escape') leavePresentation();
+});
+
 function render() {
   const log = view === 'games';
   const sample = ready && !games.length && showSamples && !log;
   const display = sample ? examples : games;
   const players = rankPlayers(display);
+  drawPodium(players, log);
+  $('projector').hidden = log;
   $('status').textContent = online ? 'Live feed' : busy ? 'Connecting' : 'Feed offline';
   $('status').classList.toggle('live', online);
   $('section-info').textContent = log ? 'Finished games, newest report first.' : 'Players ranked by total ladder points.';
@@ -51,7 +103,7 @@ function render() {
   $('scores').hidden = log; $('games-table').hidden = !log;
   const note = [!online && ready ? 'Showing the last successful update.' : '', sample ? 'Sample standings · The club ladder starts with the first reported game.' : ''].filter(Boolean).join(' ');
   $('notice').textContent=note; $('notice').hidden=!note;
-  const query = $('search').value.trim().toLowerCase();
+  const query = presenting ? '' : $('search').value.trim().toLowerCase();
   const tbody = (log ? $('games-table') : $('scores')).tBodies[0];
   tbody.replaceChildren();
   if (log) {
