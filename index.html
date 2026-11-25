@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rookroom · Club ladder</title>
+<meta name="description" content="Follow the school chess club ladder, see game results and report a finished game.">
+<meta name="theme-color" content="#183c31">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23183c31'/%3E%3Cpath d='M8 6h4v4h2V6h4v4h2V6h4v8l-4 4 1 6h2v3H9v-3h2l1-6-4-4z' fill='%23faf6ea'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="fonts.css"><link rel="stylesheet" href="style.css">
+<script type="module" src="ladder.js"></script></head>
+<body><a class="skip" href="#standings">Skip to standings</a>
+<header><div class="bar"><a href="#top" class="brand" aria-label="Rookroom home"><span class="brand-tile"><i class="rook"></i></span>Rookroom</a>
+<nav aria-label="Club navigation"><a class="active" href="#standings" data-view="standings">Standings</a><a href="#games" data-view="games">Game log</a><a href="#scoring">Scoring</a></nav>
+<a class="primary header-report" href="https://forms.gle/izbN2XLMUAvRcx8k9" target="_blank" rel="noopener"><b aria-hidden="true">＋</b> Report a game</a></div></header>
+<main id="top"><section class="hero" aria-labelledby="page-title"><div class="hero-inner"><div class="overline"><span class="line"></span> SCHOOL CHESS CLUB</div>
+<h1 id="page-title">The club ladder<span>.</span></h1><p>Every game counts. Follow the standings and<br class="desktop"> record your next result.</p>
+<div class="hero-stats"><span><i aria-hidden="true">♟</i> <strong id="player-count">—</strong> players</span><span><i class="board-icon" aria-hidden="true"></i><strong id="game-count">—</strong> games played</span></div></div></section>
+<div class="layout" id="standings"><section class="main-card card" aria-labelledby="section-title"><div class="card-head"><div class="section-label"><span class="micro-check" aria-hidden="true"></span> CLUB RANKINGS</div>
+<div class="heading-row"><h2 id="section-title">Standings</h2><span class="status" id="status" role="status">Connecting</span></div>
+<p id="section-info">Players ranked by total ladder points.</p></div>
+<div class="tools"><label class="search"><span aria-hidden="true"></span><input type="search" id="search" placeholder="Find a player" aria-label="Find a player"></label><button id="refresh" class="refresh" type="button" aria-label="Refresh standings" title="Refresh standings"><span aria-hidden="true">↻</span></button></div>
+<div id="notice" class="notice" hidden></div><div class="table-scroll"><table id="scores"><caption class="sr-only">Club ladder rankings</caption><thead><tr><th>Rank</th><th>Player</th><th title="Games played" class="played">Played</th><th title="Wins" class="record">W</th><th title="Draws" class="record">D</th><th title="Losses" class="record">L</th><th class="points">Points</th></tr></thead><tbody></tbody></table>
+<table id="games-table" hidden><caption class="sr-only">Game log, newest report first</caption><thead><tr><th>Players</th><th>Result</th><th>Reported</th></tr></thead><tbody></tbody></table></div>
+<div class="empty" id="empty" hidden></div><div class="table-foot"><span id="table-meta" role="status">Loading standings…</span><button type="button" class="text-btn" id="sample" hidden>View sample ladder</button></div></section>
+<aside><section class="report card"><div class="section-label"><span class="tiny-form" aria-hidden="true"></span> GAME REPORTING</div><h2>Played a game?</h2><p>One player reports the result for both sides.</p><div class="qr-line"><a class="qr" href="report-qr.png" target="_blank" aria-label="Enlarge QR code"><img src="report-qr.png" alt="QR code for the game report form" width="94" height="94"></a><div><strong>Scan to report</strong><small>Open the Google Form<br>on your phone.</small></div></div>
+<a href="https://forms.gle/izbN2XLMUAvRcx8k9" target="_blank" rel="noopener" class="primary wide"><span class="tiny-form" aria-hidden="true"></span> Open game form</a><a class="download" href="report-qr.png" download="Rookroom-game-form-QR.png">Download QR code</a></section>
+<section class="scoring card" id="scoring"><div class="section-label"><span class="mini-bars" aria-hidden="true"></span> LADDER RULES</div><h2>How scoring works</h2><div class="scoring-grid"><div><b>+3</b><span>Win</span></div><div><b>+2</b><span>Draw</span></div><div><b>+1</b><span>Loss</span></div></div><p>Equal points share the same rank.</p></section></aside></div></main>
+<footer><span class="brand footer-brand"><i class="rook"></i> Rookroom</span><span>School chess club</span></footer></body></html>
