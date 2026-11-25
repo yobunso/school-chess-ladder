@@ -18,15 +18,21 @@ export function parseCsv(text) {
 const clean = s => String(s ?? '').normalize('NFKC').trim().replace(/\s+/g, ' ');
 const key = s => clean(s).toLowerCase();
 export function readGames(csv) {
+  return readFeed(csv).games;
+}
+export function readFeed(csv) {
   const [headers, ...rows] = parseCsv(csv);
   const expected = ['Timestamp', 'Your club nickname', 'Opponent’s club nickname', 'Your result'];
   const indices = expected.map(name => headers?.indexOf(name) ?? -1);
   if (indices.includes(-1)) throw new Error('Unexpected game columns');
-  return rows.flatMap(row => {
+  const stamp = headers.find(value => /^revision=\d+$/.test(value.trim()));
+  const revision = stamp ? Number(stamp.slice('revision='.length)) : null;
+  const games = rows.flatMap(row => {
     const [time, a, b, result] = indices.map(i => clean(row[i]));
     if (!time || !a || !b || key(a) === key(b) || !['Win','Draw','Loss'].includes(result)) return [];
     return [{time, a, b, result}];
   });
+  return {games, revision};
 }
 // A reproducible lottery ticket lets every browser replay the same ladder.
 function tieTicket(id, firstReportTime) {

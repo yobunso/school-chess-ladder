@@ -1,4 +1,4 @@
-import {readGames, rankPlayers} from './scoring.mjs';
+import {readFeed, rankPlayers} from './scoring.mjs';
 const FEED = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQclPBYI2T6mWIGTPUXEU3OMnBlf6a6bP6arGj3SlnG29Tj27YlhMvIj4tTc1jvorSGS0095vXay12o/pub?gid=1775395327&single=true&output=csv';
 const $ = id => document.getElementById(id);
 const examples = [
@@ -11,6 +11,8 @@ const samplePlayers = rankPlayers(examples);
 let clubPlayers = [];
 const palette=['#e3eaff','#e6edf9','#e9e5fa','#daedf7','#e5eaff','#e3eafa'];
 let games = [], ready = false, online = false, busy = false, showSamples = true;
+let acceptedRevision = -1;
+let feedbackUntil = 0;
 let view = location.hash === '#games' ? 'games' : 'standings';
 function cell(tr, value, cls) {
   const td = tr.insertCell();
@@ -88,11 +90,9 @@ function render() {
   const players = sample ? samplePlayers : clubPlayers;
   drawPodium(players, log);
   $('projector').hidden = log;
-  $('status').textContent = online ? 'Live feed' : busy ? 'Connecting' : 'Feed offline';
-  $('status').classList.toggle('live', online);
-  $('section-info').textContent = log ? 'Finished games, newest report first.' : 'Players ranked by total ladder points.';
-  $('refresh').disabled = busy;
   $('refresh').setAttribute('aria-label', log ? 'Refresh game log' : 'Refresh standings');
+  $('refresh').title = $('refresh').getAttribute('aria-label');
+  $('refresh-message').textContent = log ? 'Refreshing game log…' : 'Refreshing standings…';
   $('player-count').textContent = ready ? clubPlayers.length : '—';
   $('game-count').textContent = ready ? games.length : '—';
   $('section-title').textContent = log ? 'Game log' : 'Standings';
@@ -100,7 +100,6 @@ function render() {
   $('section-info').textContent = log ? 'Game reports, newest first.' : 'Players ranked by total ladder points.';
   $('status').textContent = busy && !ready ? 'Connecting' : online ? 'Live feed' : 'Feed offline';
   $('status').classList.toggle('live',online);
-  $('refresh').disabled = busy;
   $('scores').hidden = log; $('games-table').hidden = !log;
   const note = [!online && ready ? 'Showing the last successful update.' : '', sample ? 'Sample standings · The club ladder starts with the first reported game.' : ''].filter(Boolean).join(' ');
   $('notice').textContent=note; $('notice').hidden=!note;
@@ -127,19 +126,55 @@ function render() {
   $('table-meta').textContent = !ready ? 'Checking for game reports' : sample ? 'Example ladder · '+players.length+' players' : log ? games.length+' reported '+(games.length===1?'game':'games') : players.length+' ranked '+(players.length===1?'player':'players');
   document.querySelectorAll('[data-view]').forEach(a => {a.classList.toggle('active',a.dataset.view===view); if(a.dataset.view===view)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');});
 }
-async function refresh() {
+function setRefreshFeedback(active) {
+  $('refresh').disabled = active;
+  $('refresh-feedback').hidden = !active;
+  $('results-content').setAttribute('aria-busy', String(active));
+  $('results-content').inert = active;
+}
+async function refresh(manual = false) {
+  // A click can show feedback for a background request already in progress.
+  if (manual && !feedbackUntil) {
+    feedbackUntil = performance.now() + 550;
+    setRefreshFeedback(true);
+  }
   if (busy) return;
-  busy=true;render();
-  const controller=new AbortController(); const timer=setTimeout(()=>controller.abort(),15000);
+  busy = true;
+  const wasOnline = online;
+  let changed = false;
+  if (!ready) render();
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15000);
   try {
-    const response=await fetch(FEED+'&v='+Math.floor(Date.now()/15000),{cache:'no-store',credentials:'omit',signal:controller.signal});
+    const response = await fetch(FEED + '&v=' + Date.now(), {
+      cache: 'no-store', credentials: 'omit', signal: controller.signal
+    });
     if (!response.ok) throw new Error('Feed unavailable');
-    const reports = readGames(await response.text());
-    clubPlayers = rankPlayers(reports);
-    games = reports;
-    ready=true;online=true;
+    const snapshot = readFeed(await response.text());
+    // Legacy publications can bootstrap the page, but cannot undo a newer edit.
+    const revision = snapshot.revision ?? 0;
+    if (revision > acceptedRevision) {
+      clubPlayers = rankPlayers(snapshot.games);
+      games = snapshot.games;
+      acceptedRevision = revision;
+      ready = true;
+      changed = true;
+    }
+    online = true;
   } catch { online=false; }
-  finally {clearTimeout(timer);busy=false;render();}
+  finally {
+    clearTimeout(timer);
+    if (feedbackUntil) {
+      const remaining = feedbackUntil - performance.now();
+      if (remaining > 0) await new Promise(resolve => setTimeout(resolve, remaining));
+    }
+    busy = false;
+    if (changed || wasOnline !== online || !ready) render();
+    if (feedbackUntil) {
+      feedbackUntil = 0;
+      setRefreshFeedback(false);
+    }
+  }
 }
 function applyView() {
   if (['#standings','#games','#top',''].includes(location.hash)) {
@@ -150,7 +185,7 @@ function applyView() {
 }
 window.addEventListener('hashchange',applyView);
 document.querySelector('[href="#games"]').addEventListener('click',()=>{if(location.hash==='#games')$('standings').scrollIntoView();});
-$('search').addEventListener('input',render);$('refresh').addEventListener('click',refresh);
+$('search').addEventListener('input',render);$('refresh').addEventListener('click',() => refresh(true));
 $('sample').addEventListener('click',()=>{showSamples=!showSamples;render();});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();});
 refresh();setInterval(()=>{if(!document.hidden)refresh();},15000);
