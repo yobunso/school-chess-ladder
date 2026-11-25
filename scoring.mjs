@@ -66,8 +66,8 @@ export function rankPlayers(games) {
     // Rank zero means this player had no row before this report.
     const gap = a.rank && b.rank ? a.rank - b.rank : 0;
     const [aOutcome, bOutcome] = outcomes[game.result];
-    award(a, aOutcome, gap === 3);
-    award(b, bOutcome, gap === -3);
+    award(a, aOutcome, gap >= 3);
+    award(b, bOutcome, gap <= -3);
     ladder.sort((left, right) => right.points - left.points || left.ticket - right.ticket);
     ladder.forEach((player, index) => { player.rank = index + 1; });
   }
