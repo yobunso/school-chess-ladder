@@ -28,21 +28,48 @@ export function readGames(csv) {
     return [{time, a, b, result}];
   });
 }
+// A reproducible lottery ticket lets every browser replay the same ladder.
+function tieTicket(id, firstReportTime) {
+  let hash = 2166136261;
+  for (const char of firstReportTime + '/' + id) {
+    hash = Math.imul(hash ^ char.codePointAt(0), 16777619);
+  }
+  hash = Math.imul(hash ^ (hash >>> 16), 0x85ebca6b);
+  hash = Math.imul(hash ^ (hash >>> 13), 0xc2b2ae35);
+  return (hash ^ (hash >>> 16)) >>> 0;
+}
+
+const outcomes = {Win: ['wins', 'losses'], Draw: ['draws', 'draws'], Loss: ['losses', 'wins']};
+const pointsFor = {wins: 3, draws: 2, losses: 1};
+
 export function rankPlayers(games) {
   const players = new Map();
-  function award(name, outcome) {
+  const ladder = [];
+  function playerFor(name, time) {
     const id = key(name);
-    const p = players.get(id) ?? {name, played:0, wins:0, draws:0, losses:0, points:0};
-    p.played++;
-    p[outcome]++;
-    p.points += {wins:3, draws:2, losses:1}[outcome];
-    players.set(id, p);
+    if (!players.has(id)) {
+      const player = {name, played: 0, wins: 0, draws: 0, losses: 0, points: 0,
+        rank: 0, ticket: tieTicket(id, time)};
+      players.set(id, player);
+      ladder.push(player);
+    }
+    return players.get(id);
   }
-  for (const {a,b,result} of games) {
-    award(a, result === 'Win' ? 'wins' : result === 'Draw' ? 'draws' : 'losses');
-    award(b, result === 'Win' ? 'losses' : result === 'Draw' ? 'draws' : 'wins');
+  function award(player, outcome, doublePoints) {
+    player.played++;
+    player[outcome]++;
+    player.points += pointsFor[outcome] * (doublePoints ? 2 : 1);
   }
-  const ordered = [...players.values()].sort((a,b) => b.points-a.points || a.name.localeCompare(b.name));
-  ordered.forEach((p,i) => { p.rank = i && p.points === ordered[i-1].points ? ordered[i-1].rank : i+1; });
-  return ordered;
+  for (const game of games) {
+    const a = playerFor(game.a, game.time);
+    const b = playerFor(game.b, game.time);
+    // Rank zero means this player had no row before this report.
+    const gap = a.rank && b.rank ? a.rank - b.rank : 0;
+    const [aOutcome, bOutcome] = outcomes[game.result];
+    award(a, aOutcome, gap === 3);
+    award(b, bOutcome, gap === -3);
+    ladder.sort((left, right) => right.points - left.points || left.ticket - right.ticket);
+    ladder.forEach((player, index) => { player.rank = index + 1; });
+  }
+  return ladder;
 }

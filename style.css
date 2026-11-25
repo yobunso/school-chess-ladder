@@ -27,3 +27,17 @@ body.presenting{overflow:hidden}.presenting header,.presenting .hero,.presenting
 @media(pointer:coarse){#exit-projector{opacity:1;float:none;margin:0}}
 @media(max-width:740px){.hero{background-position:right -1.8rem top 15%;background-size:auto 145%}.bar .brand{font-size:1.1rem}.header-report{font-size:.8rem}.hero h1{font-size:3.5rem}.tools{gap:6px}.search{flex:1 1 120px}#projector{font-size:.76rem;padding:6px 8px}#podium{padding:15px 12px 0;gap:4px}.step strong{font-size:.87rem}.step .place-label{font-size:.65rem}.presenting .heading-row{flex-wrap:wrap}.presenting h2:before{content:''}}
 #podium{align-items:stretch}.place-2{margin-top:18px}.place-3{margin-top:32px}
+.projector-details { display: none; }
+.scoring .tie-rule { margin-top: .65rem; }
+.presenting .card-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .5rem 1.25rem; }
+.presenting .projector-details { display: flex; align-items: center; gap: 1rem; margin-left: auto; }
+.projector-prize, .projector-report { display: flex; align-items: center; }
+.projector-prize { flex-direction: column; align-items: flex-start; border-left: 3px solid var(--club-blue); padding-left: .8rem; }
+.projector-prize small { font-size: .75rem; font-weight: 700; letter-spacing: .09em; color: #4256a1; }
+.projector-prize strong { color: var(--club-blue); font-size: clamp(1.4rem,2vw,2rem); }
+.projector-report { gap: .4rem; font-size: .88rem; font-weight: 600; color: #283452; }
+.projector-report img { display: block; width: clamp(96px,8vw,148px); height: auto; }
+.presenting #exit-projector { position: fixed; right: .5rem; bottom: .5rem; z-index: 2; margin: 0; }
+@media (max-width: 740px) {
+  .presenting .projector-details { width: 100%; justify-content: space-between; gap: .6rem; }
+}

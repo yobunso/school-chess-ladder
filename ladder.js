@@ -7,6 +7,8 @@ const examples = [
   ['Castle Cat','Maple Rook','Draw'], ['Quiet Pawn','Castle Cat','Draw'],
   ['Knightshift','Bishop Bee','Draw'], ['Knightshift','Castle Cat','Win']
 ].map(([a,b,result]) => ({a,b,result,time:'Sample game'}));
+const samplePlayers = rankPlayers(examples);
+let clubPlayers = [];
 const palette=['#e3eaff','#e6edf9','#e9e5fa','#daedf7','#e5eaff','#e3eafa'];
 let games = [], ready = false, online = false, busy = false, showSamples = true;
 let view = location.hash === '#games' ? 'games' : 'standings';
@@ -38,20 +40,20 @@ function drawPodium(players, log) {
   podium.replaceChildren();
   if (podium.hidden) return;
   for (const place of [2, 1, 3]) {
-    const leaders = players.filter(p => p.rank === place);
+    const player = players[place - 1];
     const step = document.createElement('div');
     step.className = 'step place-' + place;
     const label = document.createElement('span');
     label.className = 'place-label';
     label.textContent = ['1st place','2nd place','3rd place'][place - 1];
     step.append(label);
-    for (const player of leaders) {
+    if (player) {
       const name = document.createElement('strong');
       name.textContent = player.name;
       step.append(name);
     }
     const points = document.createElement('small');
-    points.textContent = leaders.length ? leaders[0].points + ' pts' : 'Unoccupied';
+    points.textContent = player ? player.points + ' pts' : 'Unoccupied';
     step.append(points);
     podium.append(step);
   }
@@ -83,8 +85,7 @@ document.addEventListener('keydown', event => {
 function render() {
   const log = view === 'games';
   const sample = ready && !games.length && showSamples && !log;
-  const display = sample ? examples : games;
-  const players = rankPlayers(display);
+  const players = sample ? samplePlayers : clubPlayers;
   drawPodium(players, log);
   $('projector').hidden = log;
   $('status').textContent = online ? 'Live feed' : busy ? 'Connecting' : 'Feed offline';
@@ -92,7 +93,7 @@ function render() {
   $('section-info').textContent = log ? 'Finished games, newest report first.' : 'Players ranked by total ladder points.';
   $('refresh').disabled = busy;
   $('refresh').setAttribute('aria-label', log ? 'Refresh game log' : 'Refresh standings');
-  $('player-count').textContent = ready ? rankPlayers(games).length : '—';
+  $('player-count').textContent = ready ? clubPlayers.length : '—';
   $('game-count').textContent = ready ? games.length : '—';
   $('section-title').textContent = log ? 'Game log' : 'Standings';
   document.querySelector('.card-head .section-label').lastChild.textContent = log ? ' CLUB GAMES' : ' CLUB RANKINGS';
@@ -133,7 +134,10 @@ async function refresh() {
   try {
     const response=await fetch(FEED+'&v='+Math.floor(Date.now()/15000),{cache:'no-store',credentials:'omit',signal:controller.signal});
     if (!response.ok) throw new Error('Feed unavailable');
-    games=readGames(await response.text()); ready=true;online=true;
+    const reports = readGames(await response.text());
+    clubPlayers = rankPlayers(reports);
+    games = reports;
+    ready=true;online=true;
   } catch { online=false; }
   finally {clearTimeout(timer);busy=false;render();}
 }
